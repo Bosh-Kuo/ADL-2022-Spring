@@ -9,7 +9,8 @@ class Vocab:
         self.token2idx = {
             Vocab.PAD: 0,
             Vocab.UNK: 1,
-            **{token: i for i, token in enumerate(vocab, 2)},
+            **{token: i for i, token in enumerate(vocab, 2)},  # 從下標2開始
+            # {"{PAD]": 0, "[UNK]": 1, "my": 2, "i": 3, ...}
         }
 
     @property
@@ -34,11 +35,13 @@ class Vocab:
         self, batch_tokens: List[List[str]], to_len: int = None
     ) -> List[List[int]]:
         batch_ids = [self.encode(tokens) for tokens in batch_tokens]
-        to_len = max(len(ids) for ids in batch_ids) if to_len is None else to_len
+        to_len = max(len(ids)
+                     for ids in batch_ids) if to_len is None else to_len
         padded_ids = pad_to_len(batch_ids, to_len, self.pad_id)
         return padded_ids
 
 
 def pad_to_len(seqs: List[List[int]], to_len: int, padding: int) -> List[List[int]]:
-    paddeds = [seq[:to_len] + [padding] * max(0, to_len - len(seq)) for seq in seqs]
+    paddeds = [seq[:to_len] + [padding] *
+               max(0, to_len - len(seq)) for seq in seqs]
     return paddeds

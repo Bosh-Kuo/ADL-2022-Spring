@@ -25,9 +25,10 @@ def build_vocab(
 ) -> None:
     # most_common會使用數量作排序，並且指定要排出前幾名，train/eval中token都不超過預設的10000
     common_words = {w for w, _ in words.most_common(vocab_size)}
+    # 代表train/eval data蒐集來的tokens加上"[PAD]", "[UNK]"後的 tokens集
     vocab = Vocab(common_words)
-    vocab_path = output_dir / "vocab.pkl"
     # pickle是專門支援Python的資料型態，若儲存資料為dict，就跟json一樣，若儲存資料為object，可以將其變數化儲存，下次使用時即可還原此object的工作狀態
+    vocab_path = output_dir / "vocab.pkl"
     with open(vocab_path, "wb") as f:
         pickle.dump(vocab, f)   # 將vocab object存起來
     logging.info(f"Vocab saved at {str(vocab_path.resolve())}")
@@ -44,10 +45,12 @@ def build_vocab(
 
         for i, line in tqdm(enumerate(fp)):
             cols = line.rstrip().split(" ")
+            # glove文件每行第一個string為一個word
             word = cols[0]
+            # 剩餘的string list為該word的vector(dim = 300)
             vector = [float(v) for v in cols[1:]]
 
-            # skip word not in words if words are provided
+            # skip word not in words if words are provided(只挑出train/eval data中出現過的word)
             if word not in common_words:
                 continue
             glove[word] = vector
@@ -56,11 +59,15 @@ def build_vocab(
     assert all(len(v) == glove_dim for v in glove.values())
     assert len(glove) <= vocab_size
 
+    # 計算train/eval中有出現在glove裡面的token
     num_matched = sum([token in glove for token in vocab.tokens])
+    # for intent: Token covered: 5435 / 6491 = 0.8373132028963179
     logging.info(
         f"Token covered: {num_matched} / {len(vocab.tokens)} = {num_matched / len(vocab.tokens)}"
     )
+    # 將glove中與train/eval重疊的token的vector存成一個embeddings list，順序依照{"{PAD]": 0, "[UNK]": 1, "my": 2, "i": 3, ...}
     embeddings: List[List[float]] = [
+        # dict.get(key[, value]) : value to be returned if the key is not found
         glove.get(token, [random() * 2 - 1 for _ in range(glove_dim)])
         for token in vocab.tokens
     ]
