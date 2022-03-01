@@ -23,14 +23,14 @@ logging.basicConfig(
 def build_vocab(
     words: Counter, vocab_size: int, output_dir: Path, glove_path: Path
 ) -> None:
-    # most_common會使用數量作排序，並且指定要排出前幾名，train/eval中token都不超過預設的10000
+    # most_common會使用出現次數作排序由大到小，並且指定要排出前幾名，train/eval中token都不超過預設的10000
     common_words = {w for w, _ in words.most_common(vocab_size)}
-    # 代表train/eval data蒐集來的tokens加上"[PAD]", "[UNK]"後的 tokens集
+    # 代表train/eval data蒐集來的tokens加上"[PAD]", "[UNK]"後的 tokens字典
     vocab = Vocab(common_words)
     # pickle是專門支援Python的資料型態，若儲存資料為dict，就跟json一樣，若儲存資料為object，可以將其變數化儲存，下次使用時即可還原此object的工作狀態
     vocab_path = output_dir / "vocab.pkl"
     with open(vocab_path, "wb") as f:
-        pickle.dump(vocab, f)   # 將vocab object存起來
+        pickle.dump(vocab, f)   # 將train/eval的comman words vocab object存起來
     logging.info(f"Vocab saved at {str(vocab_path.resolve())}")
 
     glove: Dict[str, List[float]] = {}
@@ -59,13 +59,15 @@ def build_vocab(
     assert all(len(v) == glove_dim for v in glove.values())
     assert len(glove) <= vocab_size
 
-    # 計算train/eval中有出現在glove裡面的token
+    # 計算train/eval中有出現在glove裡面的tokens
     num_matched = sum([token in glove for token in vocab.tokens])
     # for intent: Token covered: 5435 / 6491 = 0.8373132028963179
     logging.info(
         f"Token covered: {num_matched} / {len(vocab.tokens)} = {num_matched / len(vocab.tokens)}"
     )
-    # 將glove中與train/eval重疊的token的vector存成一個embeddings list，順序依照{"{PAD]": 0, "[UNK]": 1, "my": 2, "i": 3, ...}
+    # 將train/eval搜集的vocab中glove與共同的tokens取出，取得glove預訓練好的vector，
+    # (依照vocab的順序{"{PAD]": 0, "[UNK]": 1, "my": 2, "i": 3, ...})存成一個embeddings list，
+    # 若vocab的某個token沒在glove裡則回傳一個隨機產生的word vector
     embeddings: List[List[float]] = [
         # dict.get(key[, value]) : value to be returned if the key is not found
         glove.get(token, [random() * 2 - 1 for _ in range(glove_dim)])
@@ -96,7 +98,7 @@ def main(args):
             [token for instance in dataset for token in instance["text"].split()]
         )
 
-    # 將intents中的字串加上index:{'income': 0, 'timezone': 1, ...}
+    # 將intents中的字串加上index(labelinig):{'income': 0, 'timezone': 1, ...}
     intent2idx = {tag: i for i, tag in enumerate(intents)}
     intent_tag_path = args.output_dir / "intent2idx.json"
     intent_tag_path.write_text(json.dumps(intent2idx, indent=2))
