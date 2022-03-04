@@ -78,13 +78,13 @@ def parse_args() -> Namespace:
         default="./data/intent/test.json",
         # required=True
     )
-    parser.add_argument(
-        "--dev_file",
-        type=Path,
-        help="Path to the test file.",
-        default="./data/intent/eval.json",
-        # required=True
-    )
+    # parser.add_argument(
+    #     "--dev_file",
+    #     type=Path,
+    #     help="Path to the test file.",
+    #     default="./data/intent/eval.json",
+    #     # required=True
+    # )
     parser.add_argument(
         "--cache_dir",
         type=Path,

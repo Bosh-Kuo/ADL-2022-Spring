@@ -73,14 +73,6 @@ def validate(args, model, eval_dataloader, criterion, datasets):
     return correct_sum/totalData, loss_sum/totalData
 
 
-# def predict(model, test_dataloader):
-#     model.eval()
-#     predict = []
-#     for i, (inputs, labels) in enumerate(test_dataloader):
-#         inputs = inputs.to(args.device)
-#         outputs = model(inputs)
-#         test_pred = torch.argmax(outputs , dim = -1)
-
 
 def main(args):
     # Check GPU
@@ -90,11 +82,13 @@ def main(args):
     # set seed
     same_seeds(args.seed)
 
+    # load vocab object (preprocess後的工作狀態)
     with open(args.cache_dir / "vocab.pkl", "rb") as f:
         vocab: Vocab = pickle.load(f)
 
+    # load label dict
     intent_idx_path = args.cache_dir / "intent2idx.json"
-    intent2idx: Dict[str, int] = json.loads(intent_idx_path.read_text())
+    intent2idx: Dict[str, int] = json.loads(intent_idx_path.read_text())  # label_mapping
 
     # {'train': path of train data, 'eval': path of eval data}
     data_paths = {split: args.data_dir / f"{split}.json" for split in SPLITS}
@@ -102,7 +96,6 @@ def main(args):
     data = {split: json.loads(path.read_text())
             for split, path in data_paths.items()}
     
-
     # {'train': SeqClsDataset object, 'eval': SeqClsDataset object}
     # datasets['train'][0]: {'text': 'i need you to book me a flight from ft lauderdale to houston on southwest', 'intent': 'book_flight', 'id': 'train-0'}
     datasets: Dict[str, SeqClsDataset] = {
