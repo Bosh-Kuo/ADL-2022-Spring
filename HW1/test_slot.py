@@ -108,17 +108,14 @@ def parse_args() -> Namespace:
     # data
     parser.add_argument("--max_len", type=int, default=128)
 
-   # model
-    parser.add_argument("--hidden_size", type=int, default=512)
-    parser.add_argument("--num_layers", type=int, default=2)
-    parser.add_argument("--dropout", type=float, default=0.1)
+    # model
+    parser.add_argument("--hidden_size", type=int, default=256)
+    parser.add_argument("--num_layers", type=int, default=3)
+    parser.add_argument("--dropout", type=float, default=0.2)
     parser.add_argument("--bidirectional", type=bool, default=True)
 
-    # optimizer
-    parser.add_argument("--lr", type=float, default=1e-3)
-
     # data loader
-    parser.add_argument("--batch_size", type=int, default=128)  # 128
+    parser.add_argument("--batch_size", type=int, default=64)
 
     parser.add_argument(
         "--device", type=torch.device, help="cpu, cuda, cuda:0, cuda:1", default="cuda"

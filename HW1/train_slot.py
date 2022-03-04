@@ -43,14 +43,14 @@ def train(args, model, train_dataloader, optimizer, criterion):
         labels = labels.to(args.device, dtype=torch.long)
         outputs = model(inputs)
         
-        # 累加預測全對的sentenc
+        # 累加預測全對的sentence
         unpaded_label_true = [labels[i,:tokens_length[i]].tolist() for i in range(len(outputs))]
         unpaded_label_pred = [torch.argmax(outputs , dim = -1)[i,:tokens_length[i]].tolist() for i in range(len(outputs))]
         correct_sum += sum([unpaded_label_true[i] == unpaded_label_pred[i] for i in range(len(unpaded_label_pred))])
         totalData += len(labels)
 
         outputs = outputs.view(-1, outputs.shape[-1])  # [batch_size * seq_len, num of label] 
-        labels = labels.view(-1)  # batch_size * seq_len
+        labels = labels.view(-1)  # [batch_size * seq_len]
         loss = criterion(outputs, labels)
         loss.backward()  # gradient
         optimizer.step()  # update parameters
@@ -87,7 +87,7 @@ def validate(args, model, eval_dataloader, criterion, datasets):
             
 
             outputs = outputs.view(-1, outputs.shape[-1])  # [batch_size * seq_len, num of label] 
-            labels = labels.view(-1)  # batch_size * seq_len
+            labels = labels.view(-1)  # [batch_size * seq_len]
             loss = criterion(outputs, labels)
             loss_sum += loss.item()
             
