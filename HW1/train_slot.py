@@ -93,8 +93,8 @@ def validate(args, model, eval_dataloader, criterion, datasets):
             
             
         print("\nDev Dataset: ", totalData)
-        print(label_true[0:10])
-        print(label_perd[0:10])
+        # print(label_true[0:10])
+        # print(label_perd[0:10])
         # print(classification_report(label_true, label_perd, mode='strict', scheme=IOB2))
         return correct_sum/totalData, loss_sum/totalData
 
@@ -132,7 +132,7 @@ def main(args):
     # inputs: [batch_size, max_len], labels: [batch_size, max_len], tokens_length: [batch_size]
     # input: 經過encode, padding的tokens list batch, label: 每個詞對應slot2idx的idx batch, tokens_length:每個句子padding前的長度
     dataloaders: Dict[str, DataLoader] = {
-        split: DataLoader(split_dataset, args.batch_size, shuffle=False, collate_fn=split_dataset.collate_fn) for split, split_dataset in datasets.items()
+        split: DataLoader(split_dataset, args.batch_size, shuffle=True, collate_fn=split_dataset.collate_fn) for split, split_dataset in datasets.items()
     }
 
     # 一個mapping matrix, 將輸入的token idx tensor轉成低維空間中的wordvector
@@ -159,7 +159,7 @@ def main(args):
     
     # TODO: init optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
-    criterion = torch.nn.CrossEntropyLoss()
+    criterion = torch.nn.CrossEntropyLoss(ignore_index=9)
 
 
     # TODO: Training loop - iterate over train dataloader and update model weights
@@ -176,7 +176,7 @@ def main(args):
             best_ckpt_path = args.ckpt_dir / 'best-model.pth'
             torch.save(model.state_dict(), best_ckpt_path)
             print("Save best model to {} epoch".format(best_ckpt_path))
-    
+    print("Best Dev Acc: {:.3f}".format(best_eval_acc))
     
 
 
@@ -202,12 +202,12 @@ def parse_args() -> Namespace:
     )
 
     # data
-    parser.add_argument("--max_len", type=int, default=128)
+    parser.add_argument("--max_len", type=int, default=64)
 
     # model
     parser.add_argument("--hidden_size", type=int, default=512)
     parser.add_argument("--num_layers", type=int, default=2)
-    parser.add_argument("--dropout", type=float, default=0.1)
+    parser.add_argument("--dropout", type=float, default=0.2)
     parser.add_argument("--bidirectional", type=bool, default=True)
 
     # optimizer
@@ -219,11 +219,11 @@ def parse_args() -> Namespace:
     parser.add_argument(
         "--device", type=torch.device, help="cpu, cuda, cuda:0, cuda:1", default="cuda"
     )
-    parser.add_argument("--num_epoch", type=int, default=100)
+    parser.add_argument("--num_epoch", type=int, default=50)
     parser.add_argument("--seed", type=int, default=43)
 
     # PACK_PADDED_SEQUENCE
-    parser.add_argument("--packed_seq", type=bool, default=False)
+    parser.add_argument("--packed_seq", type=bool, default=True)
     args = parser.parse_args()
     return args
 

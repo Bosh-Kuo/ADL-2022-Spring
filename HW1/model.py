@@ -105,7 +105,8 @@ class SlotTagger(torch.nn.Module):
         self.packed = packed
         self.rnn = nn.LSTM(self.embed_dim, self.hidden_size, self.num_layers,
                            dropout=dropout, bidirectional=self.bidirectional, batch_first=True)  # format:(batch, seq len, feature)
-        self.classifier = nn.Sequential(
+        self.batchNorm1d = nn.BatchNorm1d(self.encoder_output_size)
+        self.classifier = nn.Sequential(            
             nn.Dropout(dropout),
             nn.Linear(self.encoder_output_size, self.num_class)
         )
@@ -138,7 +139,10 @@ class SlotTagger(torch.nn.Module):
             packed_seq_out, (h_n, c_n) = self.rnn(packed_x)  
             seq_out, _ = nn.utils.rnn.pad_packed_sequence(packed_seq_out, batch_first=True, total_length = batch.size(1))
             # 合併雙向h_n [batch_size, 2*hidden_size]
-            
+
+            seq_out = seq_out.permute(0,2,1)
+            seq_out = self.batchNorm1d(seq_out)
+            seq_out = seq_out.permute(0,2,1)
             output = self.classifier(seq_out)
             output = torch.index_select(output, 0, original_idx.to('cuda'))  # 依照給定的idx序列在dim=0上取tensor
             return output
