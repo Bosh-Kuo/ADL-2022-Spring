@@ -95,7 +95,7 @@ def validate(args, model, eval_dataloader, criterion, datasets):
         print("\nDev Dataset: ", totalData)
         # print(label_true[0:10])
         # print(label_perd[0:10])
-        # print(classification_report(label_true, label_perd, mode='strict', scheme=IOB2))
+        print(classification_report(label_true, label_perd, mode='strict', scheme=IOB2))
         return correct_sum/totalData, loss_sum/totalData
 
 
@@ -132,7 +132,7 @@ def main(args):
     # inputs: [batch_size, max_len], labels: [batch_size, max_len], tokens_length: [batch_size]
     # input: 經過encode, padding的tokens list batch, label: 每個詞對應slot2idx的idx batch, tokens_length:每個句子padding前的長度
     dataloaders: Dict[str, DataLoader] = {
-        split: DataLoader(split_dataset, args.batch_size, shuffle=True, collate_fn=split_dataset.collate_fn) for split, split_dataset in datasets.items()
+        split: DataLoader(split_dataset, args.batch_size, shuffle=False, collate_fn=split_dataset.collate_fn) for split, split_dataset in datasets.items()
     }
 
     # 一個mapping matrix, 將輸入的token idx tensor轉成低維空間中的wordvector
@@ -141,23 +141,18 @@ def main(args):
     model = SlotTagger(embeddings, args.hidden_size, args.num_layers, args.dropout, args.bidirectional,
                           datasets[TRAIN].num_classes, args.packed_seq).to(args.device)
     
-    # train_dataloader = dataloaders['train']
-    # inputs,  labels, tokens_length = next(iter(train_dataloader))
-    # inputs = inputs.to(args.device)
-    # labels = labels.to(args.device)
-    # outputs = model(inputs)
+    train_dataloader = dataloaders['train']
+    inputs,  labels, tokens_length = next(iter(train_dataloader))
+    inputs = inputs.to(args.device)
+    labels = labels.to(args.device)
+    outputs = model(inputs)
     # print(inputs)
     # print(labels)
     # print(tokens_length)
     # print(outputs.size())
     # unpaded_label_idx_batch = [labels[i,:tokens_length[i]].tolist() for i in range(len(outputs))]
     # unpaded_label_batch = [[datasets[TRAIN].idx2label(idx) for idx in idx_sentence] for idx_sentence in unpaded_label_idx_batch]
-    # print(unpaded_label_idx_batch)
-    # print(unpaded_label_batch)
-    # correct_sum = sum([unpaded_label_idx_batch[i] == unpaded_label_idx_batch[i] for i in range(len(unpaded_label_idx_batch))])
-    # print(correct_sum)
-    
-    # TODO: init optimizer
+    # print(unpaded_label_idx_
     optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
     criterion = torch.nn.CrossEntropyLoss(ignore_index=9)
 
@@ -177,7 +172,8 @@ def main(args):
             torch.save(model.state_dict(), best_ckpt_path)
             print("Save best model to {} epoch".format(best_ckpt_path))
     print("Best Dev Acc: {:.3f}".format(best_eval_acc))
-    
+    optimizer = torch.optim.Adam(model.parameters(), lr = args.lr)
+    criterion = torch.nn.CrossEntropyLoss(ignore_index=9)
 
 
 def parse_args() -> Namespace:

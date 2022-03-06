@@ -45,7 +45,7 @@ class SeqClassifier(torch.nn.Module):
         # TODO: implement model forward
         if (self.packed):
             #每個句子padding前的長度[batch_size]
-            input_length = torch.tensor([sum(input.gt(0)) for input in batch])  # .gt means grater not get 
+            input_length = torch.tensor([sum(input.gt(0)) for input in batch])  # .gt means grater
             # 將每個句子按未padding前的長度降冪排列 [batch_size]
             sorted_input_length, sorted_idx = input_length.sort(dim=0, descending=True)  
             sorted_tokens_idx = batch[sorted_idx]  # [batch_size, max_len]
@@ -94,7 +94,11 @@ class SlotTagger(torch.nn.Module):
         packed: bool
     ) -> None:
         super(SlotTagger, self).__init__()
-        self.embed = Embedding.from_pretrained(embeddings, freeze=False)
+        self.embed = nn.Sequential(
+            Embedding.from_pretrained(embeddings, freeze=False),              
+            nn.Dropout(),
+        )
+        
         # TODO: model architecture
         self.embed_dim = embeddings.size(1)  # 輸入 x 的特徵數量，embedding dim = 300
         self.hidden_size = hidden_size  # 隱藏層 h 的特徵數量，
@@ -107,9 +111,11 @@ class SlotTagger(torch.nn.Module):
                            dropout=dropout, bidirectional=self.bidirectional, batch_first=True)  # format:(batch, seq len, feature)
         self.batchNorm1d = nn.BatchNorm1d(self.encoder_output_size)
         self.classifier = nn.Sequential(            
-            nn.Dropout(dropout),
-            nn.Linear(self.encoder_output_size, self.num_class)
+            nn.Linear(self.encoder_output_size, self.encoder_output_size),
+            nn.ReLU(),
+            nn.Linear(self.encoder_output_size, self.num_class),
         )
+
 
     @property
     def encoder_output_size(self) -> int:
@@ -124,7 +130,9 @@ class SlotTagger(torch.nn.Module):
         # TODO: implement model forward
         if (self.packed):
             #每個句子padding前的長度[batch_size]
-            input_length = torch.tensor([sum(input.lt(9)) for input in batch])  # .lt means less than
+            # print(batch)
+            input_length = torch.tensor([sum(input.gt(0)) for input in batch])  # .lt means less than
+            # print(input_length)
             # 將每個句子按未padding前的長度降冪排列 [batch_size]
             sorted_input_length, sorted_idx = input_length.sort(dim=0, descending=True)  
             sorted_tokens_idx = batch[sorted_idx]  # [batch_size, max_len]
@@ -140,24 +148,26 @@ class SlotTagger(torch.nn.Module):
             seq_out, _ = nn.utils.rnn.pad_packed_sequence(packed_seq_out, batch_first=True, total_length = batch.size(1))
             # 合併雙向h_n [batch_size, 2*hidden_size]
 
+            # batch norm
             seq_out = seq_out.permute(0,2,1)
             seq_out = self.batchNorm1d(seq_out)
             seq_out = seq_out.permute(0,2,1)
+
             output = self.classifier(seq_out)
             output = torch.index_select(output, 0, original_idx.to('cuda'))  # 依照給定的idx序列在dim=0上取tensor
-            return output
+            
             # print('input_length: ', input_length)
             # print('sorted_input_length: ', sorted_input_length)
             # print('original input_length: ', torch.index_select(sorted_input_length,  0, original_idx))
             # print('sorted_idx ', sorted_idx)
             # print('original_idx: ', original_idx)
             # print(output.size())
-        
+            return output
+
         else:
             # 轉為word vector [batch_size, max_len, embed_dim]
             x = self.embed(batch)
             seq_out, (h_n, c_n) = self.rnn(x)
-            
             output = self.classifier(seq_out)
             return output
             # print("output size: ",output.size())
