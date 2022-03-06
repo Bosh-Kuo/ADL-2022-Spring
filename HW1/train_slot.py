@@ -141,11 +141,11 @@ def main(args):
     model = SlotTagger(embeddings, args.hidden_size, args.num_layers, args.dropout, args.bidirectional,
                           datasets[TRAIN].num_classes, args.packed_seq).to(args.device)
     
-    train_dataloader = dataloaders['train']
-    inputs,  labels, tokens_length = next(iter(train_dataloader))
-    inputs = inputs.to(args.device)
-    labels = labels.to(args.device)
-    outputs = model(inputs)
+    # train_dataloader = dataloaders['train']
+    # inputs,  labels, tokens_length = next(iter(train_dataloader))
+    # inputs = inputs.to(args.device)
+    # labels = labels.to(args.device)
+    # outputs = model(inputs)
     # print(inputs)
     # print(labels)
     # print(tokens_length)
