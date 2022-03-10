@@ -45,7 +45,7 @@ class SeqClassifier(torch.nn.Module):
         # TODO: implement model forward
         if (self.packed):
             #每個句子padding前的長度[batch_size]
-            input_length = torch.tensor([sum(input.gt(0)) for input in batch])  # .gt means grater
+            input_length = torch.tensor([sum(input.gt(0)) for input in batch])  # .gt means greater
             # 將每個句子按未padding前的長度降冪排列 [batch_size]
             sorted_input_length, sorted_idx = input_length.sort(dim=0, descending=True)  
             sorted_tokens_idx = batch[sorted_idx]  # [batch_size, max_len]
@@ -131,7 +131,7 @@ class SlotTagger(torch.nn.Module):
         if (self.packed):
             #每個句子padding前的長度[batch_size]
             # print(batch)
-            input_length = torch.tensor([sum(input.lt(9)) for input in batch])  # .lt means less than
+            input_length = torch.tensor([sum(input.gt(0)) for input in batch])  # .lt means less than
             # print(input_length)
             # 將每個句子按未padding前的長度降冪排列 [batch_size]
             sorted_input_length, sorted_idx = input_length.sort(dim=0, descending=True)  

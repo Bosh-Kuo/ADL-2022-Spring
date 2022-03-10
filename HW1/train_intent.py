@@ -111,7 +111,7 @@ def main(args):
         split: DataLoader(split_dataset, args.batch_size, shuffle=True, collate_fn=split_dataset.collate_fn) for split, split_dataset in datasets.items()
     }
 
-    # 一個mapping matrix, 將輸入的token idx tensor轉成低維空間中的wordvector
+    # 一個mapping matrix, 將輸入的token idx tensor轉成低維空間中的word vector
     embeddings = torch.load(args.cache_dir / "embeddings.pt")
 
 
