@@ -1,6 +1,6 @@
 # Applied Deep Learning (2022 Spring)
 
-## Hw1 Intent Classification and Slot Tagging
+## **Hw1 Intent Classification and Slot Tagging**
 
 ### kaggle: 
 **- Intent Classification:**  
@@ -12,7 +12,14 @@
 
 <br>
 
-## Hw2 Chinese Question Answering
+## **Hw2 Chinese Question Answering**
 
-### kaggle: 
+### kaggle:  
 **- Chinese Question Answering**
+  public: (147/172) - `pass strong line`  
+  private: (87/172) - `pass strong line`
+
+<br>
+
+## **Hw3 Natural Language Generation**
+

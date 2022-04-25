@@ -229,7 +229,7 @@ def main():
         # paragraph: 後文（選項）
         # [[paragraphs0_0, paragraphs1_0, paragraphs2_0, paragraphs3_0], [paragraphs0_1, paragraphs1_1, paragraphs2_1, paragraphs3_1] ...]
         second_sentences = [
-            [f"{context_list[idx]}" for idx in selections] for i, selections in enumerate(paragraphsIdx)  # i: 第 i 個 data
+            [f"{context_list[idx]}" for idx in selections] for i, selections in enumerate(paragraphsIdx)  # i: 第 i 個 data， 每個 data 有4個 paragraph selection 
         ]
 
         # Flatten everything

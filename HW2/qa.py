@@ -171,7 +171,7 @@ def main():
         tokenized_examples["start_positions"] = []
         tokenized_examples["end_positions"] = []
 
-        #  若有些 QA context 太常會被分成好幾段，offset_mapping長度就是所有分段 QA input 的數量 
+        #  若有些 QA context 太長會被分成好幾段，offset_mapping長度就是所有分段 QA input 的數量 
         for i, offsets in enumerate(offset_mapping):
             # We will label impossible answers with the index of the CLS token.
             input_ids = tokenized_examples["input_ids"][i]
@@ -292,7 +292,7 @@ def main():
 
             # Set to None the offset_mapping that are not part of the context so it's easy to determine if a token
             # position is part of the context or not.
-            # 原本 question tokens 和 特殊字符 tokens 也有 offset pair (startIdx, endIdx), 將除了 context 之外的 offset mapping 都轉成 None 就能快速分辨哪些是 context
+            # 原本 question tokens 和特殊字符 tokens 也有 offset pair (startIdx, endIdx), 將除了 context 之外的 offset mapping 都轉成 None 就能快速分辨哪些是 context
             tokenized_examples["offset_mapping"][i] = [
                 (o if sequence_ids[k] == context_index else None)
                 for k, o in enumerate(tokenized_examples["offset_mapping"][i])
