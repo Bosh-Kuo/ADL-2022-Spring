@@ -14,7 +14,7 @@ def parse_args():
         "--test_file", type=str, default="./data/public.jsonl", help="A csv or a json file containing the validation data."
     )
     parser.add_argument(
-        "--output_dir", type=str, default="./data/output_submission.jsonl", help="Where to store the final model."
+        "--output_dir", type=str, default="./data/output_submission2.jsonl", help="Where to store the final model."
     )
     parser.add_argument(
         "--ignore_pad_token_for_loss",
@@ -64,7 +64,7 @@ def parse_args():
     parser.add_argument(
         "--do_sample",
         type=bool,
-        default=True,
+        default=False,
         help="Whether to ignore the tokens corresponding to " "padded labels in the loss computation or not.",
     )
     parser.add_argument(
