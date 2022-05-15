@@ -10,7 +10,7 @@ from transformers.trainer_callback import EarlyStoppingCallback
 import numpy as np
 from datasets import load_metric, load_dataset
 import argparse
-
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 tokenizer = AutoTokenizer.from_pretrained('t5-small')
 tokenizer.pad_token = tokenizer.eos_token
@@ -56,7 +56,8 @@ def read_data(data_dir):
     datasets = {}
     for split in splits:
         directory = os.path.join(data_dir, split)
-        datasets[split] = load_dataset(directory, data_files=['text.csv'])
+        # datasets[split] = load_dataset(directory, data_files=['text.csv'])  #'text.csv'
+        datasets[split] = load_dataset('json', data_files=f'{directory}/text.json', field='data')  #'text.csv'
         if split != 'test':
             datasets[split] = datasets[split].map(
                 preprocess_function,
@@ -71,13 +72,13 @@ def read_data(data_dir):
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--dataset_root", default='OTTers/data', type=str, help="OTTers dir"
+        "--dataset_root", default='./data', type=str, help="OTTers dir"
     )
     parser.add_argument(
         "--domain", default='in_domain', type=str, help="domain"
     )
     parser.add_argument(
-        "--model_name_or_path", default='t5-small', type=str, help="model to finetune"
+        "--model_name_or_path", default='runs/finetune', type=str, help="model to finetune"  #5-small
     )
     parser.add_argument(
         "--output_dir", default='runs/finetune', type=str, help="dir to save finetuned model"
@@ -105,7 +106,11 @@ if __name__ == "__main__":
     print('reading dataset')
     dataset_dir = os.path.join(args.dataset_root, args.domain)
     train_dataset, eval_dataset, test_dataset = read_data(dataset_dir) 
+    print(train_dataset)
+    print(eval_dataset)
+    print(test_dataset)
     model = T5ForConditionalGeneration.from_pretrained(args.model_name_or_path)
+    model.to('cuda')
     data_collator = DataCollatorForSeq2Seq(tokenizer, model=model, label_pad_token_id=-100)
     metric = load_metric("sacrebleu")
 
@@ -137,59 +142,61 @@ if __name__ == "__main__":
         result = {k: round(v, 4) for k, v in result.items()}
         return result
 
-    # Train model
-    training_args = Seq2SeqTrainingArguments(
-        output_dir=args.output_dir,
-        overwrite_output_dir=True,
-        evaluation_strategy="epoch",
-        logging_strategy="epoch",
-        save_strategy="epoch",
-        save_total_limit=10,
-        load_best_model_at_end=True,
-        metric_for_best_model="eval_loss",
-        num_train_epochs=args.max_epoch,
-        per_device_train_batch_size=args.train_bsize,
-        per_device_eval_batch_size=args.eval_bsize,
-        label_smoothing_factor=0.1,
-        eval_accumulation_steps=10,
-        # weight_decay=0.01,               # strength of weight decay
-    )
-        # Initialize our Trainer
-    trainer = Seq2SeqTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=eval_dataset,
-        tokenizer=tokenizer,
-        data_collator=data_collator,
-        # data_collator=default_data_collator,
-        # compute_metrics=compute_metrics,
-    )
+    # # Train model
+    # training_args = Seq2SeqTrainingArguments(
+    #     output_dir=args.output_dir,
+    #     overwrite_output_dir=True,
+    #     evaluation_strategy="epoch",
+    #     logging_strategy="epoch",
+    #     save_strategy="epoch",
+    #     save_total_limit=10,
+    #     load_best_model_at_end=True,
+    #     metric_for_best_model="eval_loss",
+    #     num_train_epochs=args.max_epoch,
+    #     per_device_train_batch_size=args.train_bsize,
+    #     per_device_eval_batch_size=args.eval_bsize,
+    #     label_smoothing_factor=0.1,
+    #     eval_accumulation_steps=10,
+    #     # weight_decay=0.01,               # strength of weight decay
+    # )
+    #     # Initialize our Trainer
+    # trainer = Seq2SeqTrainer(
+    #     model=model,
+    #     args=training_args,
+    #     train_dataset=train_dataset,
+    #     eval_dataset=eval_dataset,
+    #     tokenizer=tokenizer,
+    #     data_collator=data_collator,
+    #     # data_collator=default_data_collator,
+    #     # compute_metrics=compute_metrics,
+    # )
 
-    train_result = trainer.train()
-    trainer.save_model()
-    metrics = train_result.metrics
-    metrics["train_samples"] = len(train_dataset)
+    # train_result = trainer.train()
+    # trainer.save_model()
+    # metrics = train_result.metrics
+    # metrics["train_samples"] = len(train_dataset)
 
-    trainer.log_metrics("train", metrics)
-    trainer.save_metrics("train", metrics)
-    trainer.save_state()
+    # trainer.log_metrics("train", metrics)
+    # trainer.save_metrics("train", metrics)
+    # trainer.save_state()
 
   
     # test
-    model.to('cpu')
+    model.to('cuda')
     inputs = tokenizer(test_dataset['inputs'], return_tensors="pt", padding=True)
+    inputs.to('cuda')
     output_sequences = model.generate(
         input_ids=inputs["input_ids"],
         attention_mask=inputs["attention_mask"],
     )
+    output_sequences= output_sequences.cpu().numpy()
     predictions = tokenizer.batch_decode(output_sequences, skip_special_tokens=True)
     predictions = [pred.strip() for pred in predictions]
-    output_prediction_file = os.path.join(training_args.output_dir, "generated_predictions.txt")
+    output_prediction_file = os.path.join(args.output_dir, "generated_predictions.txt")
     with open(output_prediction_file, "w", encoding="utf-8") as writer:
         writer.write("\n".join(predictions))
-    result = metric.compute(predictions=[predictions], references=test_dataset['target'])
+    result = metric.compute(predictions=predictions, references=[[i]for i in test_dataset['target']])
     result = {"bleu": result["score"]}
     print(result)
 
-    trainer.save_model(args.output_dir)
+    # trainer.save_model(args.output_dir)

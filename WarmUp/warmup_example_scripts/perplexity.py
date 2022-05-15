@@ -11,8 +11,11 @@ model_id = "gpt2"
 model = GPT2LMHeadModel.from_pretrained(model_id).to(device)
 tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
 
-prediction = load_dataset("text", data_files={"prediction": sys.argv[1]})["prediction"]
+prediction_ppl_dir = './runs/finetune/generated_predictions_ppl.json'
+# prediction = load_dataset("text", data_files={"prediction": sys.argv[1]})["prediction"]
+prediction = load_dataset('json', data_files={"prediction": prediction_ppl_dir}, field='data')["prediction"]  #'text.csv'
 
+print(prediction)
 loss = 0
 steps = 0
 nll = 0
