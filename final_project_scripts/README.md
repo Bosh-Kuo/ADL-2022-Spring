@@ -1,62 +1,87 @@
-# ADL 2022 Final Project Scripts
-## Submission
-Submit your codes, outputs, and report in a zip file named `team_{team_id}.zip`,
-for example, `team_1.zip`.
-Your submission should be unzipped into a folder with following structure:
-```
-team_{team_id}/
-    report.pdf
-    run.sh
-    requirements.txt
-    simulator.py
-    output.jsonl
-    [any other scripts you need, such as my_model.py]
-    [your trained model]
-    [any other resource you need, such as concept net subgraph]
-```
-Where `run.sh` is your command to generate `output.jsonl`,
-which is the output of `simulator.py` on the test set.
-For example, the `run.sh` should be:
-```
-pip install -r requirements.txt
-python simulator.py --model_name_or_path my_train_model/ --split test
-```
-and `output.jsonl` should contain 980 dialogues of (at most) 5 turns.
-**PLEASE DONT MODIFY THE SEED.** We need to pickup some specific dialogues for human evaluation.
+# ADL_Final_Project
+2022 ADL Final Project 
 
-## Usage
-### Install requirements
-```
-pip install -r requirements.txt
-python3 -m spacy download en_core_web_sm
-```
-Note: 
-It is ok if you want to use toolkits of different version.
-Please provide your requirements.txt in your submission.
+## **Basic Data**
+Collect from simulator.py script provided by TA
+- train_output.jsonl: 4819 dialogues
+- validation_output.jsonl: 1009 dialogues
+- test_output.jsonl: 980 dialogues
 
-### Run simulator
-**WARNING: ONLY USE THE TEST SET TO CALCULATE HIT RATE METRIC !!!**
-**WARNING: DONT USE THE TEST SET TO TRAIN OR TUNE YOUR MODEL !!!**
-You can use the simulator to:
-1. Collect your own training & validation data by yourself
-2. Test your model by the test set and generate output (for metric calculation)
-3. Have a conversation with blendorbot by interactive mode
+<br>
 
-**WARNING: YOU WOULD NEED TO MODIFY THIS SCRIPT**
-To load your model in this scripts, please 
-1. write/import your model structure (replace `bot = AutoModel...`)
-2. make sure it can load trained weights correctly
-3. make sure your tokenizer works correctly (replace `bot_tokenizer = AutoTokenizer...`)
-4. make sure your model can generate sentence correctly (around `reply_ids = bot.generate(...`)
+## **Hit Generator**
+The `Hit Generator` try to mock user, which takes the past utterances as input and predict what user will say in user's next utterance in a different topic
 
-Your efforts would be minimized if your model is a variant of Seq2SeqLM model in `transformers`.
-Before you submit your codes, please make sure the simulator can run smoothly, 
-which should generate output file `output.jsonl` in the same format when you directly run this script.
-Write your commands in `run.sh`.
 
-### Calculate metric (hit rate)
-**WARNING: PLEASE DO NOT MODIFY `hit.py` AND `keywords.json`.**
-This script will calculate keyword hit rate for you by:
+
+### **Collect data**
+Suppose the dialogue scenario between system and user like that:
 ```
-python hit.py --prediction [/path/to/your/output/prediction/from/simulator]
+user: u1(topic1)
+                s1(topic1) :system 
+user: u2(topic1, have intent)
+                s2(topic1, transition) :system
+user: u3(topic2)   
+...
+...   
 ```
+- source : [u2] or [u1, s1, u2]
+- target : [u3] 
+
+``` shell
+python make_HG_text.py --data_file ../train_output.jsonl --output_file ./data/train/hit_generator_text.json 
+python make_HG_text.py --data_file ../validation_output.jsonl --output_file ./data/validation/hit_generator_text.json 
+python make_HG_text.py --data_file ../test_output.jsonl --output_file ./data/test/hit_generator_text.json 
+```
+
+### **Train**
+``` shell
+python train_hit_generator.py --model_name_or_path t5-small --output_dir t5_hit_generator
+```
+
+### **Inference**
+``` shell
+python train_hit_generator.py --data_file ./data/train/hit_generator_text.json --output_file ./data/train/output.json
+python train_hit_generator.py --data_file ./data/validation/hit_generator_text.json --output_file ./data/validation/output.json
+python train_hit_generator.py --data_file ./data/test/hit_generator_text.json --output_file ./data/test/output.json
+```
+ 
+<br>
+
+## **Transition**
+
+### **Collect data**
+- source : [u2, u3]
+- target : [u2] 
+  
+```shell
+python make_transition_text.py --data_file ../train_output.jsonl --output_file ./data/train/transition_text.json
+python make_transition_text.py --data_file ../validation_output.jsonl --output_file ./data/validation/transition_text.json
+python make_transition_text.py --data_file ../test_output.jsonl --output_file ./data/test/transition_text.json
+```
+
+### **Train**
+``` shell
+python train_transition_generator.py --model_name_or_path t5-small --output_dir t5_transition_generator
+```
+
+### **Inference**
+``` shell
+python train_transition_generator.py --data_file ./data/train/transition_text.json --output_file ./data/train/output.json
+python train_transition_generator.py --data_file ./data/validation/transition_text.json --output_file ./data/validation/output.json
+python train_transition_generator.py --data_file ./data/test/transition_text.json --output_file ./data/test/output.json
+```
+
+<br>
+
+## **Run Simulator**
+```shell
+python simulator.py --num_chats 980 --split test --output t5_test_output.jsonl
+```
+
+### **Hit rate**
+Hit rate:
+- validation dataset: 0.874
+- test dataset: 0.877
+
+
