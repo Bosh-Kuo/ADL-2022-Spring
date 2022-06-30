@@ -23,3 +23,8 @@
 
 ## **Hw3 Natural Language Generation**
 
+## **Final Project**
+
+`Demo`
+![demo](./fig/ADL_final_project.gif)
+
