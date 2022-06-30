@@ -22,6 +22,8 @@
 <br>
 
 ## **Hw3 Natural Language Generation**
+public: - `pass strong line`  
+private:  - `pass strong line`
 
 ## **Final Project**
 
